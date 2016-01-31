@@ -1,61 +1,129 @@
 #include "FastLED.h"
 
-// How many leds in your strip?
-#define NUM_LEDS 8
+FASTLED_USING_NAMESPACE
 
-// For led chips like Neopixels, which have a data line, ground, and power, you just
-// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
-// ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
-#define DATA_PIN 23
+// FastLED "100-lines-of-code" demo reel, showing just a few 
+// of the kinds of animation patterns you can quickly and easily 
+// compose using FastLED.  
+//
+// This example also shows one easy way to define multiple 
+// animations patterns and have them automatically rotate.
+//
+// -Mark Kriegsman, December 2014
 
-// Define the array of leds
+#if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
+#warning "Requires FastLED 3.1 or later; check github for latest code."
+#endif
+
+#define DATA_PIN    23
+//#define CLK_PIN   4
+#define LED_TYPE    NEOPIXEL
+#define COLOR_ORDER GRB
+#define NUM_LEDS    240
 CRGB leds[NUM_LEDS];
 
-void setup() { 
-      // Uncomment/edit one of the following lines for your leds arrangement.
-      // FastLED.addLeds<TM1803, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<TM1804, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<TM1809, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
-       FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-      // FastLED.addLeds<APA104, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<UCS1903, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<UCS1903B, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<GW6205, DATA_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<GW6205_400, DATA_PIN, RGB>(leds, NUM_LEDS);
-      
-      // FastLED.addLeds<WS2801, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<SM16716, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<LPD8806, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<P9813, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<APA102, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<DOTSTAR, RGB>(leds, NUM_LEDS);
+#define BRIGHTNESS          96
+#define FRAMES_PER_SECOND  120
+#define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-      // FastLED.addLeds<WS2801, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<SM16716, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<LPD8806, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<P9813, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<APA102, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
-      // FastLED.addLeds<DOTSTAR, DATA_PIN, CLOCK_PIN, RGB>(leds, NUM_LEDS);
+uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
+uint8_t gHue = 0; // rotating "base color" used by many of the patterns
+
+
+void rainbow() 
+{
+  // FastLED's built-in rainbow generator
+  fill_rainbow( leds, NUM_LEDS, gHue, 7);
 }
 
-void loop() { 
-  // Turn the LED on, then pause
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Green;
-  leds[2] = CRGB::Blue;
-  leds[3] = CRGB::Purple;
-  leds[4] = CRGB::LawnGreen;
-  leds[5] = CRGB::Teal;
-  leds[6] = CRGB::Pink;
-  leds[7] = CRGB::Orange;
-  FastLED.show();
-  delay(500);
-  // Now turn the LED off, then pause
-  leds[0] = CRGB::Red;
-  leds[0].fadeLightBy(100);
-  FastLED.show();
-  delay(50);
+void addGlitter( fract8 chanceOfGlitter) 
+{
+  if( random8() < chanceOfGlitter) {
+    leds[ random16(NUM_LEDS) ] += CRGB::White;
+  }
+}
+
+void rainbowWithGlitter() 
+{
+  // built-in FastLED rainbow, plus some random sparkly glitter
+  rainbow();
+  addGlitter(80);
+}
+
+
+void confetti() 
+{
+  // random colored speckles that blink in and fade smoothly
+  fadeToBlackBy( leds, NUM_LEDS, 10);
+  int pos = random16(NUM_LEDS);
+  leds[pos] += CHSV( gHue + random8(64), 200, 255);
+}
+
+void sinelon()
+{
+  // a colored dot sweeping back and forth, with fading trails
+  fadeToBlackBy( leds, NUM_LEDS, 20);
+  int pos = beatsin16(13,0,NUM_LEDS);
+  leds[pos] += CHSV( gHue, 255, 192);
+}
+
+void bpm()
+{
+  // colored stripes pulsing at a defined Beats-Per-Minute (BPM)
+  uint8_t BeatsPerMinute = 62;
+  CRGBPalette16 palette = PartyColors_p;
+  uint8_t beat = beatsin8( BeatsPerMinute, 64, 255);
+  for( int i = 0; i < NUM_LEDS; i++) { //9948
+    leds[i] = ColorFromPalette(palette, gHue+(i*2), beat-gHue+(i*10));
+  }
+}
+
+void juggle() {
+  // eight colored dots, weaving in and out of sync with each other
+  fadeToBlackBy( leds, NUM_LEDS, 20);
+  byte dothue = 0;
+  for( int i = 0; i < 8; i++) {
+    leds[beatsin16(i+7,0,NUM_LEDS)] |= CHSV(dothue, 200, 255);
+    dothue += 32;
+  }
+}
+
+
+
+void setup() {
+  delay(3000); // 3 second delay for recovery
+  
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,DATA_PIN>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+
+  // set master brightness control
+  FastLED.setBrightness(BRIGHTNESS);
+}
+
+
+// List of patterns to cycle through.  Each is defined as a separate function below.
+typedef void (*SimplePatternList[])();
+SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
+
+void nextPattern()
+{
+  // add one to the current pattern number, and wrap around at the end
+  gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
+}
+
+
+void loop()
+{
+  // Call the current pattern function once, updating the 'leds' array
+  gPatterns[gCurrentPatternNumber]();
+
+  // send the 'leds' array out to the actual LED strip
+  FastLED.show();  
+  // insert a delay to keep the framerate modest
+  FastLED.delay(1000/FRAMES_PER_SECOND); 
+
+  // do some periodic updates
+  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
+  EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
 }
