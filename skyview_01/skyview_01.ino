@@ -1,13 +1,12 @@
 #include "FastLED.h"
 
 // How many leds in your strip?
-#define NUM_LEDS 1
+#define NUM_LEDS 8
 
 // For led chips like Neopixels, which have a data line, ground, and power, you just
 // need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
 // ground, and power), like the LPD8806 define both DATA_PIN and CLOCK_PIN
-#define DATA_PIN 3
-#define CLOCK_PIN 13
+#define DATA_PIN 23
 
 // Define the array of leds
 CRGB leds[NUM_LEDS];
@@ -20,7 +19,7 @@ void setup() {
       // FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
       // FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
       // FastLED.addLeds<WS2812B, DATA_PIN, RGB>(leds, NUM_LEDS);
-      FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+       FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
       // FastLED.addLeds<APA104, DATA_PIN, RGB>(leds, NUM_LEDS);
       // FastLED.addLeds<UCS1903, DATA_PIN, RGB>(leds, NUM_LEDS);
       // FastLED.addLeds<UCS1903B, DATA_PIN, RGB>(leds, NUM_LEDS);
@@ -45,10 +44,18 @@ void setup() {
 void loop() { 
   // Turn the LED on, then pause
   leds[0] = CRGB::Red;
+  leds[1] = CRGB::Green;
+  leds[2] = CRGB::Blue;
+  leds[3] = CRGB::Purple;
+  leds[4] = CRGB::LawnGreen;
+  leds[5] = CRGB::Teal;
+  leds[6] = CRGB::Pink;
+  leds[7] = CRGB::Orange;
   FastLED.show();
   delay(500);
   // Now turn the LED off, then pause
-  leds[0] = CRGB::Black;
+  leds[0] = CRGB::Red;
+  leds[0].fadeLightBy(100);
   FastLED.show();
-  delay(500);
+  delay(50);
 }
