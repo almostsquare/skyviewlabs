@@ -255,7 +255,7 @@ uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration inter
 uint32_t Now = 0;        // used to calculate integration interval
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
+float qt[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 
 
@@ -421,10 +421,10 @@ void loop()
         Serial.print(" my = "); Serial.print( (int)my );
         Serial.print(" mz = "); Serial.print( (int)mz ); Serial.println(" mG");
 
-        Serial.print("q0 = "); Serial.print(q[0]);
-        Serial.print(" qx = "); Serial.print(q[1]);
-        Serial.print(" qy = "); Serial.print(q[2]);
-        Serial.print(" qz = "); Serial.println(q[3]);
+        Serial.print("q0 = "); Serial.print(qt[0]);
+        Serial.print(" qx = "); Serial.print(qt[1]);
+        Serial.print(" qy = "); Serial.print(qt[2]);
+        Serial.print(" qz = "); Serial.println(qt[3]);
       }
 
       // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
@@ -436,9 +436,9 @@ void loop()
       // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
       // applied in the correct order which for this configuration is yaw, pitch, and then roll.
       // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
-      yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
-      pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-      roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+      yaw   = atan2(2.0f * (qt[1] * qt[2] + qt[0] * qt[3]), qt[0] * qt[0] + qt[1] * qt[1] - qt[2] * qt[2] - qt[3] * qt[3]);
+      pitch = -asin(2.0f * (qt[1] * qt[3] - qt[0] * qt[2]));
+      roll  = atan2(2.0f * (qt[0] * qt[1] + qt[2] * qt[3]), qt[0] * qt[0] - qt[1] * qt[1] - qt[2] * qt[2] + qt[3] * qt[3]);
       pitch *= 180.0f / PI;
       yaw   *= 180.0f / PI;
       yaw   -= 13.8; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
@@ -944,7 +944,7 @@ void readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t * des
 // but is much less computationally intensive---it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-  float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+  float q1 = qt[0], q2 = qt[1], q3 = qt[2], q4 = qt[3];   // short name local variable for readability
   float norm;
   float hx, hy, _2bx, _2bz;
   float s1, s2, s3, s4;
@@ -1027,10 +1027,10 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
   q4 += qDot4 * deltat;
   norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
   norm = 1.0f / norm;
-  q[0] = q1 * norm;
-  q[1] = q2 * norm;
-  q[2] = q3 * norm;
-  q[3] = q4 * norm;
+  qt[0] = q1 * norm;
+  qt[1] = q2 * norm;
+  qt[2] = q3 * norm;
+  qt[3] = q4 * norm;
 
 }
 
@@ -1040,7 +1040,7 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
 // measured ones.
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-  float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+  float q1 = qt[0], q2 = qt[1], q3 = qt[2], q4 = qt[3];   // short name local variable for readability
   float norm;
   float hx, hy, bx, bz;
   float vx, vy, vz, wx, wy, wz;
@@ -1123,9 +1123,9 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
   // Normalise quaternion
   norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
   norm = 1.0f / norm;
-  q[0] = q1 * norm;
-  q[1] = q2 * norm;
-  q[2] = q3 * norm;
-  q[3] = q4 * norm;
+  qt[0] = q1 * norm;
+  qt[1] = q2 * norm;
+  qt[2] = q3 * norm;
+  qt[3] = q4 * norm;
 
 }
