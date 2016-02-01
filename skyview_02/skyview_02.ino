@@ -116,6 +116,13 @@ void juggle() {
   }
 }
 
+void gyro_spot() {
+  for( int i = 0; i < NUM_LEDS; i++) { //9948
+    leds[i] += CHSV(0, 0, 5);
+  }
+  leds[gHue * NUM_LEDS / 255] = CHSV(100, 200, 255);
+}
+
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePatternList[])();
 SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
@@ -437,7 +444,8 @@ void loop()
 {
   // Call the current pattern function once, updating the 'leds' array
   //gPatterns[gCurrentPatternNumber]();
-  gPatterns[2]();
+  //gPatterns[2]();
+  gyro_spot();
 
   // send the 'leds' array out to the actual LED strip
   FastLED.show();  
