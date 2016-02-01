@@ -28,11 +28,8 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#define FASTLED_NAMESPACE_BEGIN namespace fastled{
-#define FASTLED_NAMESPACE_END }
-
 #include "FastLED.h"
-using fastled::scale8;
+
 
 // FastLED "100-lines-of-code" demo reel, showing just a few 
 // of the kinds of animation patterns you can quickly and easily 
@@ -52,7 +49,7 @@ using fastled::scale8;
 #define LED_TYPE    NEOPIXEL
 #define COLOR_ORDER GRB
 #define NUM_LEDS    240
-fastled::CRGB leds[NUM_LEDS];
+CRGB leds[NUM_LEDS];
 
 #define BRIGHTNESS          96
 #define FRAMES_PER_SECOND  120
@@ -61,7 +58,6 @@ fastled::CRGB leds[NUM_LEDS];
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 
-namespace fastled {
 void rainbow() 
 {
   // FastLED's built-in rainbow generator
@@ -130,7 +126,11 @@ void nextPattern()
   gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
 }
 
-} // end namespace fastled
+
+// ============================================================================
+// ============================================================================
+// ============================================================================
+// ============================================================================
 
 // See also MPU-9250 Register Map and Descriptions, Revision 4.0, RM-MPU-9250A-00, Rev. 1.4, 9/9/2013 for registers not listed in
 // above document; the MPU9250 and MPU9150 are virtually identical but the latter has a different register map
@@ -359,7 +359,7 @@ uint32_t lastUpdate = 0, firstUpdate = 0; // used to calculate integration inter
 uint32_t Now = 0;        // used to calculate integration interval
 
 float ax, ay, az, gx, gy, gz, mx, my, mz; // variables to hold latest sensor data values
-float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
+float qt[4] = {1.0f, 0.0f, 0.0f, 0.0f};    // vector to hold quaternion
 float eInt[3] = {0.0f, 0.0f, 0.0f};       // vector to hold integral error for Mahony method
 
 
@@ -436,7 +436,8 @@ void setup()
 void loop()
 {
   // Call the current pattern function once, updating the 'leds' array
-  gPatterns[gCurrentPatternNumber]();
+  //gPatterns[gCurrentPatternNumber]();
+  gPatterns[2]();
 
   // send the 'leds' array out to the actual LED strip
   FastLED.show();  
@@ -444,8 +445,12 @@ void loop()
   FastLED.delay(1000/FRAMES_PER_SECOND); 
 
   // do some periodic updates
-  EVERY_N_MILLISECONDS( 20 ) { gHue++; } // slowly cycle the "base color" through the rainbow
-  EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
+  EVERY_N_MILLISECONDS( 20 ) {
+    Serial.println(pitch, 2);
+    gHue = (int) ((pitch + 90.) / 180. * 255.);
+    } // slowly cycle the "base color" through the rainbow
+    
+  ///EVERY_N_SECONDS( 10 ) { nextPattern(); } // change patterns periodically
   
   // If intPin goes high, all data registers have new data
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {  // On interrupt, check if data ready interrupt
@@ -546,10 +551,10 @@ void loop()
         Serial.print(" my = "); Serial.print( (int)my );
         Serial.print(" mz = "); Serial.print( (int)mz ); Serial.println(" mG");
 
-        Serial.print("q0 = "); Serial.print(q[0]);
-        Serial.print(" qx = "); Serial.print(q[1]);
-        Serial.print(" qy = "); Serial.print(q[2]);
-        Serial.print(" qz = "); Serial.println(q[3]);
+        Serial.print("q0 = "); Serial.print(qt[0]);
+        Serial.print(" qx = "); Serial.print(qt[1]);
+        Serial.print(" qy = "); Serial.print(qt[2]);
+        Serial.print(" qz = "); Serial.println(qt[3]);
       }
 
       // Define output variables from updated quaternion---these are Tait-Bryan angles, commonly used in aircraft orientation.
@@ -561,16 +566,16 @@ void loop()
       // Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation the rotations must be
       // applied in the correct order which for this configuration is yaw, pitch, and then roll.
       // For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles which has additional links.
-      yaw   = atan2(2.0f * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
-      pitch = -asin(2.0f * (q[1] * q[3] - q[0] * q[2]));
-      roll  = atan2(2.0f * (q[0] * q[1] + q[2] * q[3]), q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3]);
+      yaw   = atan2(2.0f * (qt[1] * qt[2] + qt[0] * qt[3]), qt[0] * qt[0] + qt[1] * qt[1] - qt[2] * qt[2] - qt[3] * qt[3]);
+      pitch = -asin(2.0f * (qt[1] * qt[3] - qt[0] * qt[2]));
+      roll  = atan2(2.0f * (qt[0] * qt[1] + qt[2] * qt[3]), qt[0] * qt[0] - qt[1] * qt[1] - qt[2] * qt[2] + qt[3] * qt[3]);
       pitch *= 180.0f / PI;
       yaw   *= 180.0f / PI;
       yaw   -= 13.8; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
       roll  *= 180.0f / PI;
 
      if (SerialPlotter) {
-        Serial.println(pitch, 2);
+        //Serial.println(pitch, 2);
      }
      
       if (SerialDebug) {
@@ -1069,7 +1074,7 @@ void readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t * des
 // but is much less computationally intensive---it can be performed on a 3.3 V Pro Mini operating at 8 MHz!
 void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-  float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+  float q1 = qt[0], q2 = qt[1], q3 = qt[2], q4 = qt[3];   // short name local variable for readability
   float norm;
   float hx, hy, _2bx, _2bz;
   float s1, s2, s3, s4;
@@ -1152,10 +1157,10 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
   q4 += qDot4 * deltat;
   norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);    // normalise quaternion
   norm = 1.0f / norm;
-  q[0] = q1 * norm;
-  q[1] = q2 * norm;
-  q[2] = q3 * norm;
-  q[3] = q4 * norm;
+  qt[0] = q1 * norm;
+  qt[1] = q2 * norm;
+  qt[2] = q3 * norm;
+  qt[3] = q4 * norm;
 
 }
 
@@ -1165,7 +1170,7 @@ void MadgwickQuaternionUpdate(float ax, float ay, float az, float gx, float gy, 
 // measured ones.
 void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, float gz, float mx, float my, float mz)
 {
-  float q1 = q[0], q2 = q[1], q3 = q[2], q4 = q[3];   // short name local variable for readability
+  float q1 = qt[0], q2 = qt[1], q3 = qt[2], q4 = qt[3];   // short name local variable for readability
   float norm;
   float hx, hy, bx, bz;
   float vx, vy, vz, wx, wy, wz;
@@ -1248,10 +1253,10 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
   // Normalise quaternion
   norm = sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
   norm = 1.0f / norm;
-  q[0] = q1 * norm;
-  q[1] = q2 * norm;
-  q[2] = q3 * norm;
-  q[3] = q4 * norm;
+  qt[0] = q1 * norm;
+  qt[1] = q2 * norm;
+  qt[2] = q3 * norm;
+  qt[3] = q4 * norm;
 
 }
 
