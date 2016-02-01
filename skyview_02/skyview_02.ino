@@ -118,9 +118,9 @@ void juggle() {
 
 void gyro_spot() {
   for( int i = 0; i < NUM_LEDS; i++) { //9948
-    leds[i] += CHSV(0, 0, 5);
+    leds[i] = CRGB(0, 0, 0);
   }
-  leds[gHue * NUM_LEDS / 255] = CHSV(100, 200, 255);
+  leds[gHue * NUM_LEDS / 255] = CRGB(100, 0, 0);
 }
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
