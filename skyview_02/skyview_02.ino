@@ -117,10 +117,15 @@ void juggle() {
 }
 
 void gyro_spot() {
-  for( int i = 0; i < NUM_LEDS; i++) { //9948
-    leds[i] = CRGB(0, 0, 0);
-  }
-  leds[gHue * NUM_LEDS / 255] = CRGB(100, 0, 0);
+
+  // a colored dot sweeping back and forth, with fading trails
+  fadeToBlackBy( leds, NUM_LEDS, 20);
+  leds[gHue] += CHSV( gHue, 255, 192);
+  
+  //for( int i = 0; i < NUM_LEDS; i++) { //9948
+  //  leds[i] = CRGB(0, 0, 0);
+  //}
+  //leds[gHue * NUM_LEDS / 255] = CRGB(100, 0, 0);
 }
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
@@ -1267,6 +1272,8 @@ void MahonyQuaternionUpdate(float ax, float ay, float az, float gx, float gy, fl
   qt[3] = q4 * norm;
 
 }
+
+
 
 
 
